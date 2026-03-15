@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>สินค้าสำเร็จรูป</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root {
+      --pink:    #FF3CAC;
+      --purple:  #784BA0;
+      --blue:    #2B86C5;
+      --cyan:    #00D2FF;
+      --green:   #00F5A0;
+      --orange:  #FF6B35;
+      --yellow:  #FFD93D;
+      --dark:    #0D0D1A;
+      --card:    rgba(255,255,255,0.07);
+      --border:  rgba(255,255,255,0.12);
+      --text:    #F0F0FF;
+      --muted:   rgba(240,240,255,0.5);
+      --radius:  18px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 0%,   rgba(255,60,172,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 10%,  rgba(43,134,197,0.20) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 60% at 50% 100%, rgba(120,75,160,0.25) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-wrap { position: relative; z-index: 1; }
+
+    .header {
+      padding: 20px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-icon {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(255,60,172,0.45);
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-family: 'Kanit', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 0.3px;
+      line-height: 1.1;
+    }
+    .header-text p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      color: var(--muted);
+      font-family: 'Kanit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .25s ease;
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .tab-btn .tab-icon { font-size: 16px; }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(255,60,172,0.4);
+    }
+    .tab-btn:not(.active):hover {
+      border-color: rgba(255,255,255,0.3);
+      color: var(--text);
+    }
+
+    .container { padding: 0 14px 80px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      backdrop-filter: blur(16px);
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-family: 'Kanit', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--pink), var(--cyan));
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .field select,
+    .field input[type="text"],
+    .field input[type="number"] {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      transition: border-color .2s, box-shadow .2s;
+      appearance: none;
+      outline: none;
+    }
+    .field select:focus,
+    .field input:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 3px rgba(255,60,172,0.18);
+    }
+    .field select option { background: #1a1a2e; }
+
+    .location-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(0,210,255,0.15), rgba(43,134,197,0.15));
+      border: 1.5px solid rgba(0,210,255,0.35);
+      border-radius: 50px;
+      padding: 10px 16px;
+      font-family: 'Kanit', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--cyan);
+      width: 100%;
+      min-height: 44px;
+    }
+    .location-pill .loc-icon { font-size: 16px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Kanit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s ease;
+      letter-spacing: 0.3px;
+    }
+    .btn:active { transform: scale(0.96); }
+
+    .btn-scan {
+      width: 100%;
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(43,134,197,0.35);
+    }
+    .btn-save-in {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      color: var(--dark);
+      box-shadow: 0 4px 16px rgba(0,245,160,0.3);
+    }
+    .btn-save-out {
+      width: 100%;
+      background: linear-gradient(135deg, var(--orange), var(--yellow));
+      color: var(--dark);
+      box-shadow: 0 4px 16px rgba(255,107,53,0.3);
+    }
+    .btn-search {
+      width: 100%;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(255,60,172,0.3);
+    }
+    .btn-clear {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-close {
+      background: rgba(255,255,255,0.1);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 420px;
+    }
+    thead th {
+      background: rgba(255,255,255,0.06);
+      padding: 12px 14px;
+      font-family: 'Kanit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 11px 14px;
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+    .remain-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .remain-ok  { background: rgba(0,245,160,0.15); color: var(--green); }
+    .remain-low { background: rgba(255,107,53,0.15); color: var(--orange); }
+    .remain-zero{ background: rgba(255,60,172,0.15); color: var(--pink); }
+
+    .qty-input {
+      width: 80px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      text-align: center;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .qty-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,210,255,0.18);
+    }
+
+    .branch-select {
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 13px;
+      outline: none;
+      min-width: 110px;
+      transition: border-color .2s;
+    }
+    .branch-select:focus { border-color: var(--orange); }
+    .branch-select option { background: #1a1a2e; }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 14px;
+      animation: slideIn .3s ease;
+    }
+    .toast.success {
+      background: linear-gradient(135deg, rgba(0,245,160,0.15), rgba(0,210,255,0.1));
+      border: 1.5px solid rgba(0,245,160,0.35);
+      color: var(--green);
+    }
+    .toast.error {
+      background: linear-gradient(135deg, rgba(255,60,172,0.15), rgba(255,107,53,0.1));
+      border: 1.5px solid rgba(255,60,172,0.35);
+      color: var(--pink);
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .search-wrap { position: relative; }
+    .search-wrap input {
+      padding-left: 40px !important;
+    }
+    .search-icon {
+      position: absolute;
+      left: 13px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .ss-bar-wrap { width: 80px; }
+    .ss-bar-bg {
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .ss-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      transition: width .4s ease;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+
+    .scanner-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 999;
+    }
+    .scanner-sheet {
+      background: #13132b;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 24px 24px 0 0;
+      padding: 20px;
+      animation: sheetUp .3s ease;
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .sheet-header h3 {
+      font-family: 'Kanit', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    #reader {
+      width: 100%;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'Kanit', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      background: linear-gradient(135deg, var(--pink), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    @media (min-width: 600px) {
+      .scanner-sheet { border-radius: 24px; margin: 16px; }
+      .scanner-modal { align-items: center; }
+    }
+    @media (min-width: 768px) {
+      .header { padding: 24px 28px 20px; }
+      .tabs { padding: 0 24px 20px; }
+      .container { padding: 0 24px 80px; }
+      .card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrap">
+
+  <div class="header">
+    <div class="header-icon">📦</div>
+    <div class="header-text">
+      <h1>สินค้าสำเร็จรูป</h1>
+      <p>Inventory Management System</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('inbound', this)">
+      <span class="tab-icon">📥</span> รับเข้า
+    </button>
+    <button class="tab-btn" onclick="showTab('outbound', this)">
+      <span class="tab-icon">📤</span> เบิกออก
+    </button>
+    <button class="tab-btn" onclick="showTab('stock', this)">
+      <span class="tab-icon">📊</span> Stock
+    </button>
+  </div>
+
+  <div class="container">
+
+    <div id="tab-inbound">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> ข้อมูลการรับเข้า</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>👤 ผู้บันทึก</label>
+            <select id="in-user"></select>
+          </div>
+          <div class="field">
+            <label>📍 ชั้นจัดเก็บ</label>
+            <div id="in-location" class="location-pill">
+              <span class="loc-icon">🔍</span> รอสแกน QR Code
+            </div>
+          </div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button class="btn btn-scan" onclick="openScanner('inbound')">
+              <span>📷</span> สแกน QR Code ชั้นจัดเก็บ
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> รายการสินค้า</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>รายการสินค้า</th>
+                <th>คงเหลือ</th>
+                <th>รับเข้า</th>
+              </tr>
+            </thead>
+            <tbody id="inbound-table-body">
+              <tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📷</div><p>กรุณาสแกน QR Code ชั้นจัดเก็บ</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-save-in" onclick="saveInboundData()">
+          <span>✅</span> บันทึกรับเข้า
+        </button>
+        <div id="inbound-message" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div id="tab-outbound" class="hidden">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> ข้อมูลการเบิกออก</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>👤 ผู้บันทึก</label>
+            <select id="out-user"></select>
+          </div>
+          <div class="field">
+            <label>📍 ชั้นจัดเก็บ</label>
+            <div id="out-location" class="location-pill">
+              <span class="loc-icon">🔍</span> รอสแกน QR Code
+            </div>
+          </div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button class="btn btn-scan" onclick="openScanner('outbound')">
+              <span>📷</span> สแกน QR Code ชั้นจัดเก็บ
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> รายการสินค้า</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>รายการสินค้า</th>
+                <th>คงเหลือ</th>
+                <th>เบิก</th>
+                <th>สาขา</th>
+              </tr>
+            </thead>
+            <tbody id="outbound-table-body">
+              <tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📷</div><p>กรุณาสแกน QR Code ชั้นจัดเก็บ</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-save-out" onclick="saveOutboundData()">
+          <span>🚀</span> บันทึกเบิกออก
+        </button>
+        <div id="outbound-message" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div id="tab-stock" class="hidden">
+      <div class="stats-row" id="stock-stats" style="display:none;">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-lbl">รายการทั้งหมด</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-ok" style="background: linear-gradient(135deg,#00F5A0,#00D2FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div>
+          <div class="stat-lbl">ปกติ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-low" style="background: linear-gradient(135deg,#FF6B35,#FFD93D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div>
+          <div class="stat-lbl">ใกล้หมด</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> ค้นหาสินค้า</div>
+        <div class="form-grid" style="align-items:flex-end;">
+          <div class="field">
+            <label>🔍 ชื่อสินค้า</label>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input list="product-list" id="stock-search" type="text" placeholder="พิมพ์เพื่อค้นหา..." onkeydown="if(event.key==='Enter') loadStockData()">
+              <datalist id="product-list"></datalist>
+            </div>
+          </div>
+          <div class="field">
+            <button class="btn btn-search" onclick="loadStockData()">ค้นหา</button>
+          </div>
+          <div class="field">
+            <button class="btn btn-clear" onclick="clearStockSearch()">ล้างค้นหา</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> ตารางสินค้า</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ชั้นจัดเก็บ</th>
+                <th>รายการสินค้า</th>
+                <th>SS</th>
+                <th>คงเหลือ</th>
+              </tr>
+            </thead>
+            <tbody id="stock-table-body">
+              <tr><td colspan="4"><div class="empty-state"><div class="empty-icon">⏳</div><p>กำลังโหลดข้อมูล...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="scannerModal" class="scanner-modal">
+  <div class="scanner-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3>📷 สแกน QR Code</h3>
+      <button class="btn btn-close" onclick="closeScanner()">✕ ปิด</button>
+    </div>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
+      วางกล้องให้ตรง QR Code ชั้นจัดเก็บ ระบบจะอ่านค่าโดยอัตโนมัติ
+    </p>
+    <div id="reader"></div>
+  </div>
+</div>
+
+<script>
+  // ใส่ URL Web App ของ Apps Script ตรงนี้
+  const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzXSz_CyMyx-Y9fn_LpWFmfMqJk9N8WzWzl-kHj4Qv3RfDvRIH9qTCi9M4PqxKvZbZtow/exec';
+
+  let appData = { users: [], branches: [], productNames: [] };
+  let currentScanTarget = '';
+  let html5QrCode = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadInitialData();
+  });
+
+  function showTab(tabName, btn) {
+    ['inbound','outbound','stock'].forEach(t => {
+      document.getElementById('tab-' + t).classList.add('hidden');
+    });
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    btn.classList.add('active');
+    if (tabName === 'stock') loadStockData();
+  }
+
+  function apiCall(action, params = {}) {
+    return new Promise((resolve, reject) => {
+      const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+
+      const query = new URLSearchParams({
+        action,
+        callback: callbackName,
+        ...params
+      });
+
+      const script = document.createElement('script');
+      script.src = `${API_BASE_URL}?${query.toString()}`;
+
+      let isDone = false;
+
+      function cleanup() {
+        if (isDone) return;
+        isDone = true;
+        try { delete window[callbackName]; } catch (e) {}
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[callbackName] = function(response) {
+        cleanup();
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error((response && response.message) || 'เกิดข้อผิดพลาดจาก API'));
+        }
+      };
+
+      script.onerror = function() {
+        cleanup();
+        reject(new Error('ไม่สามารถเชื่อมต่อ API ได้'));
+      };
+
+      document.body.appendChild(script);
+
+      setTimeout(() => {
+        cleanup();
+        reject(new Error('หมดเวลาการเชื่อมต่อ API'));
+      }, 30000);
+    });
+  }
+
+  async function loadInitialData() {
+    try {
+      const res = await apiCall('getInitialData');
+      appData = res.data || {};
+      setSelectOptions('in-user', appData.users || []);
+      setSelectOptions('out-user', appData.users || []);
+      setDatalistOptions('product-list', appData.productNames || []);
+      loadStockData();
+    } catch (err) {
+      showGlobalError(err);
+    }
+  }
+
+  function setSelectOptions(selectId, items) {
+    const s = document.getElementById(selectId);
+    s.innerHTML = '<option value="">-- เลือกผู้บันทึก --</option>';
+    items.forEach(item => {
+      const o = document.createElement('option');
+      o.value = item;
+      o.textContent = item;
+      s.appendChild(o);
+    });
+  }
+
+  function setDatalistOptions(listId, items) {
+    const list = document.getElementById(listId);
+    list.innerHTML = '';
+    items.forEach(item => {
+      const o = document.createElement('option');
+      o.value = item;
+      list.appendChild(o);
+    });
+  }
+
+  function openScanner(target) {
+    currentScanTarget = target;
+    document.getElementById('scannerModal').style.display = 'flex';
+
+    if (html5QrCode) {
+      try { html5QrCode.stop(); } catch(e) {}
+    }
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (!devices || !devices.length) {
+        alert('ไม่พบกล้อง');
+        return;
+      }
+
+      html5QrCode.start(
+        devices[0].id,
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        (decodedText) => { onScanSuccess(decodedText); },
+        () => {}
+      );
+    }).catch(err => alert('ไม่สามารถเปิดกล้อง: ' + err));
+  }
+
+  function closeScanner() {
+    document.getElementById('scannerModal').style.display = 'none';
+    if (html5QrCode) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+      }).catch(() => {});
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    closeScanner();
+    const loc = (decodedText || '').trim();
+    if (!loc) return;
+
+    if (currentScanTarget === 'inbound') {
+      document.getElementById('in-location').innerHTML = `<span class="loc-icon">📍</span> ${escapeHtml(loc)}`;
+      loadProductsByLocation('inbound', loc);
+    } else {
+      document.getElementById('out-location').innerHTML = `<span class="loc-icon">📍</span> ${escapeHtml(loc)}`;
+      loadProductsByLocation('outbound', loc);
+    }
+  }
+
+  async function loadProductsByLocation(type, locationName) {
+    try {
+      const res = await apiCall('getProductsByLocation', { locationName });
+      const items = res.data || [];
+
+      if (type === 'inbound') renderInboundTable(items);
+      else renderOutboundTable(items);
+    } catch (err) {
+      alert('เกิดข้อผิดพลาด: ' + getErrorMessage(err));
+    }
+  }
+
+  function remainBadge(n, ss) {
+    const cls = n === 0 ? 'remain-zero' : (n <= ss * 0.25 ? 'remain-low' : 'remain-ok');
+    return `<span class="remain-badge ${cls}">${n}</span>`;
+  }
+
+  function renderInboundTable(items) {
+    const tbody = document.getElementById('inbound-table-body');
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>ไม่พบสินค้าในชั้นจัดเก็บนี้</p></div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = items.map(item => `
+      <tr>
+        <td><span style="font-weight:600;">${escapeHtml(item.productName)}</span></td>
+        <td>${remainBadge(item.remain, item.ss)}</td>
+        <td><input type="number" min="0" step="1" class="qty-input in-qty" data-product="${escapeAttr(item.productName)}" placeholder="0"></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderOutboundTable(items) {
+    const tbody = document.getElementById('outbound-table-body');
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div><p>ไม่พบสินค้าในชั้นจัดเก็บนี้</p></div></td></tr>';
+      return;
+    }
+
+    const branchOpts = ['<option value="">-- สาขา --</option>']
+      .concat((appData.branches || []).map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`))
+      .join('');
+
+    tbody.innerHTML = items.map(item => `
+      <tr>
+        <td><span style="font-weight:600;">${escapeHtml(item.productName)}</span></td>
+        <td>${remainBadge(item.remain, item.ss)}</td>
+        <td><input type="number" min="0" step="1" class="qty-input out-qty" data-product="${escapeAttr(item.productName)}" placeholder="0"></td>
+        <td><select class="branch-select out-branch" data-product="${escapeAttr(item.productName)}">${branchOpts}</select></td>
+      </tr>
+    `).join('');
+  }
+
+  async function saveInboundData() {
+    const user = document.getElementById('in-user').value;
+    const locationEl = document.getElementById('in-location');
+    const location = locationEl.textContent.replace('📍','').trim();
+    const msgBox = document.getElementById('inbound-message');
+
+    if (!user) {
+      showMessage(msgBox, '⚠️ กรุณาเลือกผู้บันทึก', 'error');
+      return;
+    }
+
+    if (!location || location.includes('รอสแกน')) {
+      showMessage(msgBox, '⚠️ กรุณาสแกน QR Code ชั้นจัดเก็บ', 'error');
+      return;
+    }
+
+    const items = [];
+    document.querySelectorAll('#inbound-table-body .in-qty').forEach(input => {
+      const qty = Number(input.value || 0);
+      if (qty > 0) items.push({ productName: input.dataset.product, qty });
+    });
+
+    if (!items.length) {
+      showMessage(msgBox, '⚠️ กรุณาระบุจำนวนรับเข้าอย่างน้อย 1 รายการ', 'error');
+      return;
+    }
+
+    try {
+      const res = await apiCall('saveInbound', {
+        payload: JSON.stringify({ user, location, items })
+      });
+      showMessage(msgBox, '✅ ' + (res.message || 'บันทึกเรียบร้อย'), 'success');
+      resetInboundForm();
+    } catch (err) {
+      showMessage(msgBox, '❌ ' + getErrorMessage(err), 'error');
+    }
+  }
+
+  async function saveOutboundData() {
+    const user = document.getElementById('out-user').value;
+    const locationEl = document.getElementById('out-location');
+    const location = locationEl.textContent.replace('📍','').trim();
+    const msgBox = document.getElementById('outbound-message');
+
+    if (!user) {
+      showMessage(msgBox, '⚠️ กรุณาเลือกผู้บันทึก', 'error');
+      return;
+    }
+
+    if (!location || location.includes('รอสแกน')) {
+      showMessage(msgBox, '⚠️ กรุณาสแกน QR Code ชั้นจัดเก็บ', 'error');
+      return;
+    }
+
+    const items = [];
+    document.querySelectorAll('#outbound-table-body .out-qty').forEach(input => {
+      const qty = Number(input.value || 0);
+      if (qty > 0) {
+        const productName = input.dataset.product;
+        const sel = document.querySelector(`#outbound-table-body .out-branch[data-product="${cssEscape(productName)}"]`);
+        items.push({
+          productName,
+          qty,
+          branch: sel ? sel.value : ''
+        });
+      }
+    });
+
+    if (!items.length) {
+      showMessage(msgBox, '⚠️ กรุณาระบุจำนวนเบิกอย่างน้อย 1 รายการ', 'error');
+      return;
+    }
+
+    try {
+      const res = await apiCall('saveOutbound', {
+        payload: JSON.stringify({ user, location, items })
+      });
+      showMessage(msgBox, '✅ ' + (res.message || 'บันทึกเรียบร้อย'), 'success');
+      resetOutboundForm();
+    } catch (err) {
+      showMessage(msgBox, '❌ ' + getErrorMessage(err), 'error');
+    }
+  }
+
+  async function loadStockData() {
+    const keyword = document.getElementById('stock-search').value.trim();
+    try {
+      const res = await apiCall('getStockData', { keyword });
+      renderStockTable(res.data || []);
+    } catch (err) {
+      alert('เกิดข้อผิดพลาด: ' + getErrorMessage(err));
+    }
+  }
+
+  function renderStockTable(rows) {
+    const tbody = document.getElementById('stock-table-body');
+    const statsRow = document.getElementById('stock-stats');
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🔍</div><p>ไม่พบข้อมูล</p></div></td></tr>';
+      statsRow.style.display = 'none';
+      return;
+    }
+
+    let ok = 0, low = 0;
+    rows.forEach(r => {
+      if (r.remain === 0) low++;
+      else if (r.remain <= r.ss * 0.25) low++;
+      else ok++;
+    });
+
+    document.getElementById('stat-total').textContent = rows.length;
+    document.getElementById('stat-ok').textContent = ok;
+    document.getElementById('stat-low').textContent = low;
+    statsRow.style.display = 'grid';
+
+    tbody.innerHTML = rows.map(row => {
+      const pct = row.ss > 0 ? Math.min(100, Math.round((row.remain / row.ss) * 100)) : 100;
+      return `
+        <tr>
+          <td><span style="background:rgba(0,210,255,0.1);border:1px solid rgba(0,210,255,0.3);padding:3px 9px;border-radius:6px;font-size:12px;color:var(--cyan);">${escapeHtml(row.location)}</span></td>
+          <td style="font-weight:600;">${escapeHtml(row.productName)}</td>
+          <td>
+            <div class="ss-bar-wrap">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;">${row.ss}</div>
+              <div class="ss-bar-bg"><div class="ss-bar-fill" style="width:${pct}%"></div></div>
+            </div>
+          </td>
+          <td>${remainBadge(row.remain, row.ss)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function clearStockSearch() {
+    document.getElementById('stock-search').value = '';
+    loadStockData();
+  }
+
+  function resetInboundForm() {
+    document.getElementById('in-location').innerHTML = '<span class="loc-icon">🔍</span> รอสแกน QR Code';
+    document.getElementById('inbound-table-body').innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📷</div><p>กรุณาสแกน QR Code ชั้นจัดเก็บ</p></div></td></tr>';
+    loadStockData();
+  }
+
+  function resetOutboundForm() {
+    document.getElementById('out-location').innerHTML = '<span class="loc-icon">🔍</span> รอสแกน QR Code';
+    document.getElementById('outbound-table-body').innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📷</div><p>กรุณาสแกน QR Code ชั้นจัดเก็บ</p></div></td></tr>';
+    loadStockData();
+  }
+
+  function showMessage(el, text, type) {
+    el.innerHTML = `<div class="toast ${type}">${text}</div>`;
+    setTimeout(() => { el.innerHTML = ''; }, 4000);
+  }
+
+  function showGlobalError(err) {
+    alert('เกิดข้อผิดพลาด: ' + getErrorMessage(err));
+  }
+
+  function getErrorMessage(err) {
+    if (!err) return 'เกิดข้อผิดพลาด';
+    if (typeof err === 'string') return err;
+    if (err.message) return err.message;
+    return JSON.stringify(err);
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  function escapeAttr(str) {
+    return String(str || '')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  function cssEscape(str) {
+    return String(str || '').replace(/"/g,'\\"');
+  }
+</script>
+</body>
+</html>
