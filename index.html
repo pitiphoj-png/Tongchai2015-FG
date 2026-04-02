@@ -1,436 +1,1148 @@
-<script>
-  // ใส่ URL Web App ของ Apps Script ตรงนี้
-  const API_BASE_URL = 'https://script.google.com/macros/s/AKfycby4_M25t5ONGnAXsUpdjQv71_6gNDFE1x6BNkyUtXgFyvuoROH9K27Ib6MJvafa8xcYDg/exec';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>คลังสินค้าสำเร็จรูป</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    :root {
+      --primary:    #2563eb;
+      --primary-dk: #1d4ed8;
+      --success:    #059669;
+      --success-lt: #d1fae5;
+      --danger:     #dc2626;
+      --danger-lt:  #fee2e2;
+      --warn:       #d97706;
+      --warn-lt:    #fef3c7;
+      --neutral:    #475569;
+      --neutral-lt: #f1f5f9;
+      --bg:         #f0f4ff;
+      --card:       #ffffff;
+      --border:     #e2e8f0;
+      --text:       #0f172a;
+      --muted:      #64748b;
+      --radius:     18px;
+      --radius-sm:  12px;
+      --shadow:     0 4px 24px rgba(15,23,42,.10);
+      --shadow-sm:  0 2px 8px rgba(15,23,42,.07);
+    }
 
-  let appData = { users: [], branches: [], productNames: [] };
-  let currentScanTarget = '';
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Prompt', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+      padding: 20px 16px 72px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .header-icon {
+      font-size: 36px;
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: .3px;
+      position: relative;
+      z-index: 1;
+    }
+    .header p {
+      font-size: 13px;
+      color: rgba(255,255,255,.75);
+      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-bar {
+      display: flex;
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 6px;
+      gap: 4px;
+      margin: -44px 16px 16px;
+      position: relative;
+      z-index: 10;
+    }
+    .tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 12px 4px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: 'Prompt', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all .2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .tab-btn .tab-icon { font-size: 20px; }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(37,99,235,.35);
+    }
+
+    .main { padding: 0 12px 32px; }
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 20px 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary-dk);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .field select,
+    .field input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--border);
+      font-family: 'Prompt', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      background: #fff;
+      appearance: none;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field select:focus,
+    .field input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 16px;
+    }
+
+    .shelf-box {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      border: 2px dashed var(--border);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--neutral-lt);
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all .25s;
+    }
+    .shelf-box.filled {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: var(--primary-dk);
+    }
+    .shelf-icon { font-size: 22px; }
+
+    .btn-scan {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      font-family: 'Prompt', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(37,99,235,.30);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-scan:active { transform: scale(.97); box-shadow: 0 2px 8px rgba(37,99,235,.20); }
+    .btn-scan .scan-icon { font-size: 22px; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      min-width: 360px;
+      border-collapse: collapse;
+    }
+    thead tr {
+      background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    }
+    thead th {
+      color: #fff;
+      padding: 13px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 10px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      background: #fff;
+    }
+    tbody tr:nth-child(even) td { background: #f8faff; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody input[type="number"] {
+      width: 100%;
+      min-width: 80px;
+      padding: 10px 10px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      font-family: 'Prompt', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      transition: border-color .2s;
+    }
+    tbody input[type="number"]:focus { border-color: var(--primary); }
+    tbody select {
+      width: 100%;
+      min-width: 120px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      font-family: 'Prompt', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+    .remain-badge {
+      display: inline-block;
+      background: #eff6ff;
+      color: var(--primary-dk);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .remain-low { background: #fee2e2; color: var(--danger); }
+
+    .empty-row td {
+      text-align: center;
+      color: var(--muted);
+      padding: 28px 10px;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      flex: 1;
+      min-width: 130px;
+      padding: 16px 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Prompt', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(5,150,105,.28);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(220,38,38,.25);
+    }
+    .btn-neutral {
+      background: var(--neutral-lt);
+      color: var(--neutral);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(37,99,235,.28);
+    }
+
+    .status {
+      display: none;
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    .status.success {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      background: var(--success-lt);
+      color: #065f46;
+      border: 1.5px solid #6ee7b7;
+    }
+    .status.error {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      background: var(--danger-lt);
+      color: #991b1b;
+      border: 1.5px solid #fca5a5;
+    }
+
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.45);
+      z-index: 9998;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .loading-overlay.show { display: flex; }
+    .spinner {
+      width: 52px;
+      height: 52px;
+      border: 5px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    .loading-text { color: #fff; font-weight: 600; font-size: 15px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.80);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 9999;
+      padding: 0;
+    }
+    .modal.show { display: flex; }
+    .modal-box {
+      background: #fff;
+      width: 100%;
+      max-width: 560px;
+      border-radius: 24px 24px 0 0;
+      padding: 20px 16px 36px;
+      animation: slideUp .25s ease;
+    }
+    @media (min-width: 600px) {
+      .modal { align-items: center; }
+      .modal-box { border-radius: 24px; max-height: 90vh; overflow-y: auto; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin: 0 auto 18px;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .modal-title { font-size: 18px; font-weight: 800; }
+    .close-btn {
+      background: var(--danger-lt);
+      color: var(--danger);
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #qr-reader { width: 100%; border-radius: var(--radius-sm); overflow: hidden; }
+    .scanner-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .btn-cam {
+      flex: 1;
+      padding: 13px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-cam-switch { background: var(--warn-lt); color: var(--warn); }
+    .btn-cam-stop   { background: var(--neutral-lt); color: var(--neutral); }
+    .scan-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .stock-ok  { color: var(--success); font-weight: 700; }
+    .stock-low { color: var(--warn); font-weight: 700; }
+    .stock-out { color: var(--danger); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">กำลังประมวลผล...</div>
+</div>
+
+<div class="header">
+  <div class="header-icon">🏭</div>
+  <h1>คลังสินค้าสำเร็จรูป</h1>
+  <p>ระบบรับ-เบิกสินค้า</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('receive')">
+    <span class="tab-icon">📥</span>รับเข้า
+  </button>
+  <button class="tab-btn" onclick="switchTab('issue')">
+    <span class="tab-icon">📤</span>เบิกออก
+  </button>
+  <button class="tab-btn" onclick="switchTab('stock')">
+    <span class="tab-icon">📊</span>Stock
+  </button>
+</div>
+
+<div class="main">
+
+  <section id="tab-receive" class="tab-section active">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>ข้อมูลผู้บันทึก</div>
+
+      <div class="field">
+        <label>ผู้บันทึก</label>
+        <div class="select-wrap">
+          <select id="receiveUser">
+            <option value="">-- เลือกผู้บันทึก --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>ชั้นจัดเก็บ</label>
+        <button class="btn-scan" onclick="openScanner('receive')">
+          <span class="scan-icon">📷</span> สแกน QR Code ชั้นจัดเก็บ
+        </button>
+        <div id="receiveShelfBox" class="shelf-box" style="margin-top:10px;">
+          <span class="shelf-icon">📦</span>
+          <span>ยังไม่ได้สแกน QR Code</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>รายการสินค้า</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:45%">รายการสินค้า</th>
+              <th style="width:20%">เหลือ</th>
+              <th style="width:35%">รับเข้า</th>
+            </tr>
+          </thead>
+          <tbody id="receiveTableBody">
+            <tr class="empty-row"><td colspan="3">📷 กรุณาสแกน QR Code ชั้นจัดเก็บ</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-success" onclick="saveReceive()">✅ บันทึกรับเข้า</button>
+        <button class="btn btn-neutral" onclick="resetReceive()">🔄 ล้างข้อมูล</button>
+      </div>
+      <div id="receiveStatus" class="status"></div>
+    </div>
+  </section>
+
+  <section id="tab-issue" class="tab-section">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>ข้อมูลผู้บันทึก</div>
+
+      <div class="field">
+        <label>ผู้บันทึก</label>
+        <div class="select-wrap">
+          <select id="issueUser">
+            <option value="">-- เลือกผู้บันทึก --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>ชั้นจัดเก็บ</label>
+        <button class="btn-scan" onclick="openScanner('issue')">
+          <span class="scan-icon">📷</span> สแกน QR Code ชั้นจัดเก็บ
+        </button>
+        <div id="issueShelfBox" class="shelf-box" style="margin-top:10px;">
+          <span class="shelf-icon">📦</span>
+          <span>ยังไม่ได้สแกน QR Code</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>รายการสินค้า</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:35%">รายการสินค้า</th>
+              <th style="width:15%">เหลือ</th>
+              <th style="width:20%">เบิก</th>
+              <th style="width:30%">สาขา</th>
+            </tr>
+          </thead>
+          <tbody id="issueTableBody">
+            <tr class="empty-row"><td colspan="4">📷 กรุณาสแกน QR Code ชั้นจัดเก็บ</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-danger" onclick="saveIssue()">✅ บันทึกเบิกออก</button>
+        <button class="btn btn-neutral" onclick="resetIssue()">🔄 ล้างข้อมูล</button>
+      </div>
+      <div id="issueStatus" class="status"></div>
+    </div>
+  </section>
+
+  <section id="tab-stock" class="tab-section">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>ค้นหาสินค้า</div>
+      <div class="field">
+        <label>ชื่อสินค้า</label>
+        <input type="text" id="stockKeyword" list="productList" placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหา..." />
+        <datalist id="productList"></datalist>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="loadStock()">🔍 ค้นหา</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>รายการ Stock</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:25%">ชั้นจัดเก็บ</th>
+              <th style="width:35%">รายการ</th>
+              <th style="width:20%">SS</th>
+              <th style="width:20%">เหลือ</th>
+            </tr>
+          </thead>
+          <tbody id="stockTableBody">
+            <tr class="empty-row"><td colspan="4">กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="stockStatus" class="status"></div>
+    </div>
+  </section>
+
+</div>
+
+<div id="scannerModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">📷 สแกน QR Code</div>
+      <button class="close-btn" onclick="closeScanner()">✕ ปิด</button>
+    </div>
+
+    <div id="qr-reader"></div>
+
+    <div class="scanner-actions">
+      <button class="btn-cam btn-cam-switch" onclick="switchCamera()">🔄 สลับกล้อง</button>
+      <button class="btn-cam btn-cam-stop" onclick="closeScanner()">⏹ หยุดสแกน</button>
+    </div>
+
+    <div class="scan-note">
+      หากใช้งานบนมือถือ แนะนำเปิดผ่าน HTTPS และอนุญาตการใช้กล้อง
+    </div>
+  </div>
+</div>
+
+<script>
+  /**
+   * ใส่ URL ของ Apps Script Web App ที่ Deploy แล้ว
+   * ตัวอย่าง:
+   * https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxx/exec
+   */
+  const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbya7bne13hrQZtyeiEn-QUKRHEDvX6pL8jquV2DM-j_2RIgdMR_fJ6NBoylLXn9_YHn/exec';
+
+  let APP_DATA = {
+    users: [],
+    branches: [],
+    productNames: []
+  };
+
+  let currentScanTarget = null;
   let html5QrCode = null;
-  let currentCameraId = null;
+  let cameraList = [];
+  let currentCameraIndex = 0;
 
   document.addEventListener('DOMContentLoaded', () => {
-    loadInitialData();
+    initApp();
   });
 
-  function showTab(tabName, btn) {
-    ['inbound','outbound','stock'].forEach(t => {
-      document.getElementById('tab-' + t).classList.add('hidden');
-    });
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.remove('hidden');
-    btn.classList.add('active');
-    if (tabName === 'stock') loadStockData();
-  }
-
-  function apiCall(action, params = {}) {
-    return new Promise((resolve, reject) => {
-      const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-
-      const query = new URLSearchParams({
-        action,
-        callback: callbackName,
-        ...params
-      });
-
-      const script = document.createElement('script');
-      script.src = `${API_BASE_URL}?${query.toString()}`;
-
-      let isDone = false;
-
-      function cleanup() {
-        if (isDone) return;
-        isDone = true;
-        try { delete window[callbackName]; } catch (e) {}
-        if (script.parentNode) script.parentNode.removeChild(script);
-      }
-
-      window[callbackName] = function(response) {
-        cleanup();
-        if (response && response.success) {
-          resolve(response);
-        } else {
-          reject(new Error((response && response.message) || 'เกิดข้อผิดพลาดจาก API'));
-        }
-      };
-
-      script.onerror = function() {
-        cleanup();
-        reject(new Error('ไม่สามารถเชื่อมต่อ API ได้'));
-      };
-
-      document.body.appendChild(script);
-
-      setTimeout(() => {
-        cleanup();
-        reject(new Error('หมดเวลาการเชื่อมต่อ API'));
-      }, 30000);
-    });
-  }
-
-  async function loadInitialData() {
+  async function initApp() {
     try {
-      const res = await apiCall('getInitialData');
-      appData = res.data || {};
-      setSelectOptions('in-user', appData.users || []);
-      setSelectOptions('out-user', appData.users || []);
-      setDatalistOptions('product-list', appData.productNames || []);
-      loadStockData();
+      checkApiUrl_();
+      const res = await apiGet('initialData');
+      APP_DATA = res.data || { users: [], branches: [], productNames: [] };
+      renderDropdowns();
+      renderProductList();
+      await loadStock();
     } catch (err) {
-      showGlobalError(err);
+      alert('โหลดข้อมูลเริ่มต้นไม่สำเร็จ: ' + getErrorMessage(err));
     }
   }
 
-  function setSelectOptions(selectId, items) {
-    const s = document.getElementById(selectId);
-    s.innerHTML = '<option value="">-- เลือกผู้บันทึก --</option>';
-    items.forEach(item => {
-      const o = document.createElement('option');
-      o.value = item;
-      o.textContent = item;
-      s.appendChild(o);
+  function renderDropdowns() {
+    fillSelect('receiveUser', APP_DATA.users, '-- เลือกผู้บันทึก --');
+    fillSelect('issueUser', APP_DATA.users, '-- เลือกผู้บันทึก --');
+  }
+
+  function renderProductList() {
+    const dl = document.getElementById('productList');
+    dl.innerHTML = '';
+    (APP_DATA.productNames || []).forEach(name => {
+      const op = document.createElement('option');
+      op.value = name;
+      dl.appendChild(op);
     });
   }
 
-  function setDatalistOptions(listId, items) {
-    const list = document.getElementById(listId);
-    list.innerHTML = '';
-    items.forEach(item => {
-      const o = document.createElement('option');
-      o.value = item;
-      list.appendChild(o);
+  function fillSelect(id, items, placeholder) {
+    const el = document.getElementById(id);
+    el.innerHTML = `<option value="">${placeholder}</option>`;
+    (items || []).forEach(item => {
+      const op = document.createElement('option');
+      op.value = item;
+      op.textContent = item;
+      el.appendChild(op);
     });
   }
 
-  async function stopScanner() {
-    if (!html5QrCode) return;
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
 
-    try {
-      const state = html5QrCode.getState();
-      if (state === Html5QrcodeScannerState.SCANNING || state === 2) {
-        await html5QrCode.stop();
-      }
-    } catch (e) {}
-
-    try {
-      await html5QrCode.clear();
-    } catch (e) {}
-
-    html5QrCode = null;
-    currentCameraId = null;
-
-    const reader = document.getElementById('reader');
-    if (reader) reader.innerHTML = '';
+    if (tabName === 'receive') {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('tab-receive').classList.add('active');
+    } else if (tabName === 'issue') {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('tab-issue').classList.add('active');
+    } else {
+      document.querySelectorAll('.tab-btn')[2].classList.add('active');
+      document.getElementById('tab-stock').classList.add('active');
+    }
   }
 
-  async function openScanner(target) {
+  function openScanner(target) {
     currentScanTarget = target;
-    document.getElementById('scannerModal').style.display = 'flex';
+    document.getElementById('scannerModal').classList.add('show');
+    startScanner();
+  }
 
-    await stopScanner();
-    html5QrCode = new Html5Qrcode("reader");
-
+  async function startScanner() {
     try {
-      const devices = await Html5Qrcode.getCameras();
+      if (!window.Html5Qrcode) {
+        throw new Error('ไม่พบไลบรารีสำหรับสแกน QR Code');
+      }
 
-      if (!devices || !devices.length) {
-        alert('ไม่พบกล้อง');
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch (e) {}
+        try { await html5QrCode.clear(); } catch (e) {}
+        html5QrCode = null;
+      }
+
+      html5QrCode = new Html5Qrcode('qr-reader');
+      cameraList = await Html5Qrcode.getCameras();
+
+      if (!cameraList || cameraList.length === 0) {
+        throw new Error('ไม่พบกล้องบนอุปกรณ์นี้');
+      }
+
+      let preferredIndex = cameraList.findIndex(cam =>
+        /back|rear|environment|หลัง/i.test((cam.label || ''))
+      );
+      currentCameraIndex = preferredIndex >= 0 ? preferredIndex : 0;
+
+      await html5QrCode.start(
+        { deviceId: { exact: cameraList[currentCameraIndex].id } },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.7778
+        },
+        onScanSuccess,
+        () => {}
+      );
+    } catch (err) {
+      showStatus(currentScanTarget === 'issue' ? 'issueStatus' : 'receiveStatus', getErrorMessage(err), 'error');
+    }
+  }
+
+  async function switchCamera() {
+    try {
+      if (!cameraList || cameraList.length <= 1) {
+        alert('มีเพียงกล้องเดียวหรือไม่พบกล้องเพิ่มเติม');
         return;
       }
 
-      // พยายามเลือกกล้องหลังก่อน
-      const backCamera = devices.find(d => {
-        const label = (d.label || '').toLowerCase();
-        return (
-          label.includes('back') ||
-          label.includes('rear') ||
-          label.includes('environment') ||
-          label.includes('หลัง')
-        );
-      });
+      currentCameraIndex = (currentCameraIndex + 1) % cameraList.length;
 
-      const cameraId = backCamera ? backCamera.id : devices[0].id;
-      currentCameraId = cameraId;
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch (e) {}
+        try { await html5QrCode.clear(); } catch (e) {}
+      }
 
+      html5QrCode = new Html5Qrcode('qr-reader');
       await html5QrCode.start(
-        cameraId,
+        { deviceId: { exact: cameraList[currentCameraIndex].id } },
         {
           fps: 10,
-          qrbox: { width: 240, height: 240 },
-          aspectRatio: 1.0
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.7778
         },
-        (decodedText) => { onScanSuccess(decodedText); },
+        onScanSuccess,
         () => {}
       );
-
     } catch (err) {
-      // fallback: บางเครื่อง label กล้องไม่ชัด ให้บังคับใช้กล้องหลังด้วย facingMode
-      try {
-        await stopScanner();
-        html5QrCode = new Html5Qrcode("reader");
-
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 240, height: 240 },
-            aspectRatio: 1.0
-          },
-          (decodedText) => { onScanSuccess(decodedText); },
-          () => {}
-        );
-      } catch (fallbackErr) {
-        alert('ไม่สามารถเปิดกล้องได้: ' + (fallbackErr?.message || fallbackErr));
-      }
+      alert('สลับกล้องไม่สำเร็จ: ' + getErrorMessage(err));
     }
   }
 
   async function closeScanner() {
-    document.getElementById('scannerModal').style.display = 'none';
-    await stopScanner();
-  }
-
-  function onScanSuccess(decodedText) {
-    closeScanner();
-    const loc = (decodedText || '').trim();
-    if (!loc) return;
-
-    if (currentScanTarget === 'inbound') {
-      document.getElementById('in-location').innerHTML = `<span class="loc-icon">📍</span> ${escapeHtml(loc)}`;
-      loadProductsByLocation('inbound', loc);
-    } else {
-      document.getElementById('out-location').innerHTML = `<span class="loc-icon">📍</span> ${escapeHtml(loc)}`;
-      loadProductsByLocation('outbound', loc);
-    }
-  }
-
-  async function loadProductsByLocation(type, locationName) {
     try {
-      const res = await apiCall('getProductsByLocation', { locationName });
-      const items = res.data || [];
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch (e) {}
+        try { await html5QrCode.clear(); } catch (e) {}
+        html5QrCode = null;
+      }
+    } catch (e) {}
 
-      if (type === 'inbound') renderInboundTable(items);
-      else renderOutboundTable(items);
-    } catch (err) {
-      alert('เกิดข้อผิดพลาด: ' + getErrorMessage(err));
+    document.getElementById('scannerModal').classList.remove('show');
+  }
+
+  async function onScanSuccess(decodedText) {
+    await closeScanner();
+    const shelf = String(decodedText || '').trim();
+    if (!shelf) return;
+
+    if (currentScanTarget === 'receive') {
+      setShelfBox('receiveShelfBox', shelf);
+      await loadShelfProducts('receive', shelf);
+    } else if (currentScanTarget === 'issue') {
+      setShelfBox('issueShelfBox', shelf);
+      await loadShelfProducts('issue', shelf);
     }
   }
 
-  function remainBadge(n, ss) {
-    const cls = n === 0 ? 'remain-zero' : (n <= ss * 0.25 ? 'remain-low' : 'remain-ok');
-    return `<span class="remain-badge ${cls}">${n}</span>`;
+  function setShelfBox(id, text) {
+    const box = document.getElementById(id);
+    const filled = !!text;
+    box.classList.toggle('filled', filled);
+    box.innerHTML = `
+      <span class="shelf-icon">📦</span>
+      <span>${escapeHtml(text || 'ยังไม่ได้สแกน QR Code')}</span>
+    `;
   }
 
-  function renderInboundTable(items) {
-    const tbody = document.getElementById('inbound-table-body');
-    if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>ไม่พบสินค้าในชั้นจัดเก็บนี้</p></div></td></tr>';
+  async function loadShelfProducts(type, shelf) {
+    const statusId = type === 'receive' ? 'receiveStatus' : 'issueStatus';
+    clearStatus(statusId);
+
+    try {
+      const res = await apiGet('getProductsByShelf', { shelf });
+      const rows = res.data || [];
+
+      if (type === 'receive') {
+        renderReceiveTable(rows);
+      } else {
+        renderIssueTable(rows);
+      }
+    } catch (err) {
+      showStatus(statusId, getErrorMessage(err), 'error');
+    }
+  }
+
+  function renderReceiveTable(rows) {
+    const tbody = document.getElementById('receiveTableBody');
+    if (!rows.length) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="3">ไม่พบรายการสินค้าสำหรับชั้นจัดเก็บนี้</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = items.map(item => `
+    tbody.innerHTML = rows.map(r => `
       <tr>
-        <td><span style="font-weight:600;">${escapeHtml(item.productName)}</span></td>
-        <td>${remainBadge(item.remain, item.ss)}</td>
-        <td><input type="number" min="0" step="1" class="qty-input in-qty" data-product="${escapeAttr(item.productName)}" placeholder="0"></td>
+        <td>${escapeHtml(r.itemName)}</td>
+        <td>
+          <span class="remain-badge ${Number(r.remain) <= Number(r.ss) ? 'remain-low' : ''}">
+            ${numberFormat(r.remain)}
+          </span>
+        </td>
+        <td>
+          <input type="number" min="0" step="1" class="receive-qty"
+            data-item="${escapeAttr(r.itemName)}"
+            value="" placeholder="จำนวนรับเข้า">
+        </td>
       </tr>
     `).join('');
   }
 
-  function renderOutboundTable(items) {
-    const tbody = document.getElementById('outbound-table-body');
-    if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div><p>ไม่พบสินค้าในชั้นจัดเก็บนี้</p></div></td></tr>';
+  function renderIssueTable(rows) {
+    const tbody = document.getElementById('issueTableBody');
+    if (!rows.length) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="4">ไม่พบรายการสินค้าสำหรับชั้นจัดเก็บนี้</td></tr>`;
       return;
     }
 
-    const branchOpts = ['<option value="">-- สาขา --</option>']
-      .concat((appData.branches || []).map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`))
+    const branchOptions = [`<option value="">-- เลือกสาขา --</option>`]
+      .concat((APP_DATA.branches || []).map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`))
       .join('');
 
-    tbody.innerHTML = items.map(item => `
+    tbody.innerHTML = rows.map(r => `
       <tr>
-        <td><span style="font-weight:600;">${escapeHtml(item.productName)}</span></td>
-        <td>${remainBadge(item.remain, item.ss)}</td>
-        <td><input type="number" min="0" step="1" class="qty-input out-qty" data-product="${escapeAttr(item.productName)}" placeholder="0"></td>
-        <td><select class="branch-select out-branch" data-product="${escapeAttr(item.productName)}">${branchOpts}</select></td>
-      </tr>
-    `).join('');
-  }
-
-  async function saveInboundData() {
-    const user = document.getElementById('in-user').value;
-    const locationEl = document.getElementById('in-location');
-    const location = locationEl.textContent.replace('📍','').trim();
-    const msgBox = document.getElementById('inbound-message');
-
-    if (!user) {
-      showMessage(msgBox, '⚠️ กรุณาเลือกผู้บันทึก', 'error');
-      return;
-    }
-
-    if (!location || location.includes('รอสแกน')) {
-      showMessage(msgBox, '⚠️ กรุณาสแกน QR Code ชั้นจัดเก็บ', 'error');
-      return;
-    }
-
-    const items = [];
-    document.querySelectorAll('#inbound-table-body .in-qty').forEach(input => {
-      const qty = Number(input.value || 0);
-      if (qty > 0) items.push({ productName: input.dataset.product, qty });
-    });
-
-    if (!items.length) {
-      showMessage(msgBox, '⚠️ กรุณาระบุจำนวนรับเข้าอย่างน้อย 1 รายการ', 'error');
-      return;
-    }
-
-    try {
-      const res = await apiCall('saveInbound', {
-        payload: JSON.stringify({ user, location, items })
-      });
-      showMessage(msgBox, '✅ ' + (res.message || 'บันทึกเรียบร้อย'), 'success');
-      resetInboundForm();
-    } catch (err) {
-      showMessage(msgBox, '❌ ' + getErrorMessage(err), 'error');
-    }
-  }
-
-  async function saveOutboundData() {
-    const user = document.getElementById('out-user').value;
-    const locationEl = document.getElementById('out-location');
-    const location = locationEl.textContent.replace('📍','').trim();
-    const msgBox = document.getElementById('outbound-message');
-
-    if (!user) {
-      showMessage(msgBox, '⚠️ กรุณาเลือกผู้บันทึก', 'error');
-      return;
-    }
-
-    if (!location || location.includes('รอสแกน')) {
-      showMessage(msgBox, '⚠️ กรุณาสแกน QR Code ชั้นจัดเก็บ', 'error');
-      return;
-    }
-
-    const items = [];
-    const rows = document.querySelectorAll('#outbound-table-body tr');
-
-    rows.forEach(row => {
-      const qtyInput = row.querySelector('.out-qty');
-      const branchSelect = row.querySelector('.out-branch');
-      if (!qtyInput || !branchSelect) return;
-
-      const qty = Number(qtyInput.value || 0);
-      const productName = qtyInput.dataset.product;
-      const branch = branchSelect.value;
-
-      if (qty > 0) {
-        items.push({ productName, qty, branch });
-      }
-    });
-
-    if (!items.length) {
-      showMessage(msgBox, '⚠️ กรุณาระบุจำนวนเบิกอย่างน้อย 1 รายการ', 'error');
-      return;
-    }
-
-    const hasNoBranch = items.some(item => !item.branch);
-    if (hasNoBranch) {
-      showMessage(msgBox, '⚠️ กรุณาเลือกสาขาให้ทุกรายการที่มีการเบิก', 'error');
-      return;
-    }
-
-    try {
-      const res = await apiCall('saveOutbound', {
-        payload: JSON.stringify({ user, location, items })
-      });
-      showMessage(msgBox, '✅ ' + (res.message || 'บันทึกเรียบร้อย'), 'success');
-      resetOutboundForm();
-    } catch (err) {
-      showMessage(msgBox, '❌ ' + getErrorMessage(err), 'error');
-    }
-  }
-
-  async function loadStockData() {
-    const keyword = document.getElementById('stock-search').value.trim();
-    const tbody = document.getElementById('stock-table-body');
-
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">⏳</div><p>กำลังโหลดข้อมูล...</p></div></td></tr>';
-
-    try {
-      const res = await apiCall('getStockData', { keyword });
-      const items = res.data || [];
-      renderStockTable(items);
-      renderStockStats(items);
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">❌</div><p>${escapeHtml(getErrorMessage(err))}</p></div></td></tr>`;
-    }
-  }
-
-  function renderStockTable(items) {
-    const tbody = document.getElementById('stock-table-body');
-    if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div><p>ไม่พบข้อมูลสินค้า</p></div></td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = items.map(item => `
-      <tr>
-        <td>${escapeHtml(item.locationName || '')}</td>
-        <td><span style="font-weight:600;">${escapeHtml(item.productName || '')}</span></td>
+        <td>${escapeHtml(r.itemName)}</td>
         <td>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span>${item.ss}</span>
-            <div class="ss-bar-wrap">
-              <div class="ss-bar-bg">
-                <div class="ss-bar-fill" style="width:${Math.min(100, ((item.remain || 0) / Math.max(1, item.ss || 1)) * 100)}%"></div>
-              </div>
-            </div>
-          </div>
+          <span class="remain-badge ${Number(r.remain) <= Number(r.ss) ? 'remain-low' : ''}">
+            ${numberFormat(r.remain)}
+          </span>
         </td>
-        <td>${remainBadge(item.remain, item.ss)}</td>
+        <td>
+          <input type="number" min="0" step="1" class="issue-qty"
+            data-item="${escapeAttr(r.itemName)}"
+            data-remain="${Number(r.remain || 0)}"
+            value="" placeholder="จำนวนเบิก">
+        </td>
+        <td>
+          <select class="issue-branch" data-item="${escapeAttr(r.itemName)}">
+            ${branchOptions}
+          </select>
+        </td>
       </tr>
     `).join('');
   }
 
-  function renderStockStats(items) {
-    const wrap = document.getElementById('stock-stats');
-    const total = items.length;
-    const ok = items.filter(i => Number(i.remain) > Number(i.ss) * 0.25).length;
-    const low = items.filter(i => Number(i.remain) > 0 && Number(i.remain) <= Number(i.ss) * 0.25).length;
+  async function saveReceive() {
+    clearStatus('receiveStatus');
 
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-ok').textContent = ok;
-    document.getElementById('stat-low').textContent = low;
+    const user = document.getElementById('receiveUser').value;
+    const shelf = getShelfText_('receiveShelfBox');
 
-    wrap.style.display = total ? 'grid' : 'none';
+    const qtyInputs = [...document.querySelectorAll('.receive-qty')];
+    const items = qtyInputs.map(input => ({
+      itemName: input.dataset.item,
+      qty: Number(input.value || 0)
+    })).filter(it => it.qty > 0);
+
+    if (!user) {
+      showStatus('receiveStatus', 'กรุณาเลือกผู้บันทึก', 'error');
+      return;
+    }
+    if (!shelf) {
+      showStatus('receiveStatus', 'กรุณาสแกน QR Code ชั้นจัดเก็บ', 'error');
+      return;
+    }
+    if (!items.length) {
+      showStatus('receiveStatus', 'กรุณากรอกจำนวนรับเข้าอย่างน้อย 1 รายการ', 'error');
+      return;
+    }
+
+    setLoading(true, 'กำลังบันทึกรับเข้า...');
+
+    try {
+      const res = await apiPost('saveReceive', { user, shelf, items });
+      showStatus('receiveStatus', res.message || 'บันทึกรับเข้าเรียบร้อย', 'success');
+      resetReceive(false);
+      await loadStock();
+    } catch (err) {
+      showStatus('receiveStatus', getErrorMessage(err), 'error');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function clearStockSearch() {
-    document.getElementById('stock-search').value = '';
-    loadStockData();
+  async function saveIssue() {
+    clearStatus('issueStatus');
+
+    const user = document.getElementById('issueUser').value;
+    const shelf = getShelfText_('issueShelfBox');
+
+    const qtyInputs = [...document.querySelectorAll('.issue-qty')];
+    const branchSelects = [...document.querySelectorAll('.issue-branch')];
+
+    const branchMap = {};
+    branchSelects.forEach(sel => {
+      branchMap[sel.dataset.item] = sel.value;
+    });
+
+    const items = qtyInputs.map(input => ({
+      itemName: input.dataset.item,
+      qty: Number(input.value || 0),
+      branch: branchMap[input.dataset.item] || ''
+    })).filter(it => it.qty > 0);
+
+    if (!user) {
+      showStatus('issueStatus', 'กรุณาเลือกผู้บันทึก', 'error');
+      return;
+    }
+    if (!shelf) {
+      showStatus('issueStatus', 'กรุณาสแกน QR Code ชั้นจัดเก็บ', 'error');
+      return;
+    }
+    if (!items.length) {
+      showStatus('issueStatus', 'กรุณากรอกจำนวนเบิกอย่างน้อย 1 รายการ', 'error');
+      return;
+    }
+
+    for (const it of items) {
+      if (!it.branch) {
+        showStatus('issueStatus', `กรุณาเลือกสาขาสำหรับรายการ "${it.itemName}"`, 'error');
+        return;
+      }
+    }
+
+    setLoading(true, 'กำลังบันทึกเบิกออก...');
+
+    try {
+      const res = await apiPost('saveIssue', { user, shelf, items });
+      showStatus('issueStatus', res.message || 'บันทึกเบิกออกเรียบร้อย', 'success');
+      resetIssue(false);
+      await loadStock();
+    } catch (err) {
+      showStatus('issueStatus', getErrorMessage(err), 'error');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function resetInboundForm() {
-    document.getElementById('in-location').innerHTML = '<span class="loc-icon">🔍</span> รอสแกน QR Code';
-    document.getElementById('inbound-table-body').innerHTML =
-      '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📷</div><p>กรุณาสแกน QR Code ชั้นจัดเก็บ</p></div></td></tr>';
+  async function loadStock() {
+    clearStatus('stockStatus');
+    const keyword = document.getElementById('stockKeyword').value.trim();
+
+    try {
+      const res = await apiGet('searchStock', { keyword });
+      renderStockTable(res.data || []);
+    } catch (err) {
+      showStatus('stockStatus', getErrorMessage(err), 'error');
+    }
   }
 
-  function resetOutboundForm() {
-    document.getElementById('out-location').innerHTML = '<span class="loc-icon">🔍</span> รอสแกน QR Code';
-    document.getElementById('outbound-table-body').innerHTML =
-      '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📷</div><p>กรุณาสแกน QR Code ชั้นจัดเก็บ</p></div></td></tr>';
+  function renderStockTable(rows) {
+    const tbody = document.getElementById('stockTableBody');
+    if (!rows.length) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="4">ไม่พบข้อมูล</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${escapeHtml(r.shelfName)}</td>
+        <td>${escapeHtml(r.itemName)}</td>
+        <td>${numberFormat(r.ss)}</td>
+        <td>${numberFormat(r.remain)}</td>
+      </tr>
+    `).join('');
   }
 
-  function showMessage(el, text, type) {
-    el.innerHTML = `<div class="toast ${type}">${text}</div>`;
+  function resetReceive(clearStatusBox = true) {
+    document.getElementById('receiveUser').value = '';
+    setShelfBox('receiveShelfBox', '');
+    document.getElementById('receiveTableBody').innerHTML =
+      `<tr class="empty-row"><td colspan="3">📷 กรุณาสแกน QR Code ชั้นจัดเก็บ</td></tr>`;
+    if (clearStatusBox) clearStatus('receiveStatus');
+  }
+
+  function resetIssue(clearStatusBox = true) {
+    document.getElementById('issueUser').value = '';
+    setShelfBox('issueShelfBox', '');
+    document.getElementById('issueTableBody').innerHTML =
+      `<tr class="empty-row"><td colspan="4">📷 กรุณาสแกน QR Code ชั้นจัดเก็บ</td></tr>`;
+    if (clearStatusBox) clearStatus('issueStatus');
+  }
+
+  function setLoading(show, text = 'กำลังประมวลผล...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const textEl = overlay.querySelector('.loading-text');
+    textEl.textContent = text;
+    overlay.classList.toggle('show', !!show);
+  }
+
+  function showStatus(id, message, type) {
+    const box = document.getElementById(id);
+    box.className = `status ${type}`;
+    box.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span><span>${escapeHtml(message)}</span>`;
+  }
+
+  function clearStatus(id) {
+    const box = document.getElementById(id);
+    box.className = 'status';
+    box.innerHTML = '';
+  }
+
+  function getShelfText_(boxId) {
+    const box = document.getElementById(boxId);
+    const text = box ? box.textContent.replace('📦', '').trim() : '';
+    return text === 'ยังไม่ได้สแกน QR Code' ? '' : text;
+  }
+
+  async function apiGet(action, params = {}) {
+    checkApiUrl_();
+
+    const url = new URL(API_BASE_URL);
+    url.searchParams.set('action', action);
+
+    Object.keys(params).forEach(key => {
+      url.searchParams.set(key, params[key] == null ? '' : params[key]);
+    });
+
+    const response = await fetch(url.toString(), {
+      method: 'GET'
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'เกิดข้อผิดพลาดจาก API');
+    }
+
+    return data;
+  }
+
+  async function apiPost(action, payload = {}) {
+    checkApiUrl_();
+
+    const response = await fetch(API_BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({ action, payload })
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'เกิดข้อผิดพลาดจาก API');
+    }
+
+    return data;
+  }
+
+  function checkApiUrl_() {
+    if (!API_BASE_URL || API_BASE_URL.includes('PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE')) {
+      throw new Error('กรุณาใส่ URL ของ Apps Script Web App ในตัวแปร API_BASE_URL ก่อน');
+    }
   }
 
   function getErrorMessage(err) {
-    return err && err.message ? err.message : String(err || 'เกิดข้อผิดพลาด');
+    if (!err) return 'เกิดข้อผิดพลาด';
+    if (typeof err === 'string') return err;
+    if (err.message) return err.message;
+    return JSON.stringify(err);
   }
 
-  function showGlobalError(err) {
-    alert(getErrorMessage(err));
+  function numberFormat(n) {
+    const num = Number(n || 0);
+    return num.toLocaleString('th-TH');
   }
 
   function escapeHtml(str) {
@@ -439,10 +1151,12 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/'/g, '&#039;');
   }
 
   function escapeAttr(str) {
-    return escapeHtml(str);
+    return escapeHtml(str).replace(/"/g, '&quot;');
   }
 </script>
+</body>
+</html>
